@@ -326,10 +326,6 @@ CFLAGS += -I$(IWASM_ROOT)/interpreter
 endif
 
 CSRCS += chibios_platform.c \
-         posix_blocking_op.c \
-         posix_thread.c \
-         posix_time.c \
-         posix_sleep.c \
          mremap.c \
          mem_alloc.c \
          ems_kfc.c \

@@ -142,7 +142,7 @@ ASMSRC = $(ALLASMSRC) \
          $(ASRCS)
 
 
-LDFLAGS += -lm
+LDFLAGS += -lm --specs=nosys.specs
 
 ##############################################################################
 
