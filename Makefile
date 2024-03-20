@@ -66,7 +66,7 @@ endif
 
 # Enables the use of FPU (no, softfp, hard).
 ifeq ($(USE_FPU),)
-  USE_FPU = no
+  USE_FPU = hard
 endif
 
 # FPU-related options.
@@ -83,7 +83,7 @@ endif
 #
 
 # Define project name here
-PROJECT = ch
+PROJECT = chibios-wamr
 
 # Target settings.
 MCU  = cortex-m4
@@ -119,30 +119,58 @@ include $(CHIBIOS)/os/various/shell/shell.mk
 # Define linker script file here
 LDSCRIPT= $(STARTUPLD)/STM32G491xE.ld
 
+##############################################################################
+# nuttx WAMR makefile
+# - CSRCS
+# - ASRCS
+# - CFLAGS
+# - VPATH
+#
+include wamr.cfg
+include wamr.mk
+
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 CSRC = $(ALLCSRC) \
        $(TESTSRC) \
+       $(CSRCS) \
        main.c
+
+
+# List ASM source files here.
+ASMSRC = $(ALLASMSRC) \
+         $(ASRCS)
+
+
+LDFLAGS += -lm
+
+##############################################################################
+
+# C sources that can be compiled in ARM or THUMB mode depending on the global
+# setting.
+#CSRC := $(ALLCSRC) \
+#       $(TESTSRC) \
+#       main.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(ALLCPPSRC)
+CPPSRC := $(ALLCPPSRC)
 
 # List ASM source files here.
-ASMSRC = $(ALLASMSRC)
+#ASMSRC := $(ALLASMSRC) \
+#	 $(ASRCS)
 
 # List ASM with preprocessor source files here.
 ASMXSRC = $(ALLXASMSRC)
 
 # Inclusion directories.
-INCDIR = $(CONFDIR) $(ALLINC) $(TESTINC)
+INCDIR := $(CONFDIR) $(ALLINC) $(TESTINC)
 
 # Define C warning options here.
-CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes -Wcast-align=strict
+CWARN := -Wall -Wextra -Wundef -Wstrict-prototypes -Wcast-align=strict
 
 # Define C++ warning options here.
-CPPWARN = -Wall -Wextra -Wundef
+CPPWARN := -Wall -Wextra -Wundef
 
 #
 # Project, target, sources and paths
@@ -187,7 +215,6 @@ include $(RULESPATH)/rules.mk
 # Custom rules
 #
 
-debug: CXXFLAGS += -DDEBUG -g
 
 #
 # Custom rules
