@@ -29,8 +29,8 @@
 #include "test_wasm.h"
 
 
-#define SIO_DEV	LPSIOD1
-//#define SIO_DEV	SIOD1
+#define SIO_DEV  LPSIOD1
+//#define SIO_DEV  SIOD1
 
 /*===========================================================================*/
 /* Command line related.                                                     */
@@ -227,9 +227,9 @@ static char global_heap_buf[WASM_GLOBAL_HEAP_SIZE] = { 0 };
 
 static struct
 {
-	BaseSequentialStream   *chp;
-    wasm_module_t			module;
-	wasm_module_inst_t 		module_inst;
+    BaseSequentialStream   *chp;
+    wasm_module_t           module;
+    wasm_module_inst_t      module_inst;
 
 } wasm_instance = {0};
 
@@ -278,7 +278,7 @@ iwasm_init(void)
 
     /* instantiate the module */
     if (!(wasm_instance.module_inst = wasm_runtime_instantiate(
-    		wasm_instance.module, 8 * 1024, 8 * 1024, error_buf, sizeof(error_buf)))) {
+            wasm_instance.module, 8 * 1024, 8 * 1024, error_buf, sizeof(error_buf)))) {
         chprintf(wasm_instance.chp, "%s\n", error_buf);
         wasm_runtime_unload(wasm_instance.module);
     }
@@ -287,29 +287,29 @@ iwasm_init(void)
 void
 iwasm_test_sum(BaseSequentialStream *chp, int argc, char *argv[])
 {
-	wasm_instance.chp = chp;
-	iwasm_init();
+    wasm_instance.chp = chp;
+    iwasm_init();
 
-	if (argc < 2) {
-		chprintf(chp, "usage: <int> <int>\r\n");
-		return;
-	}
+    if (argc < 2) {
+        chprintf(chp, "usage: <int> <int>\r\n");
+        return;
+    }
 
     {
-		const char *exception;
-		uint32 wargv[2];
-		WASMFunctionInstanceCommon *func = wasm_runtime_lookup_function(wasm_instance.module_inst, "sum");
-		WASMExecEnv *exec_env = wasm_runtime_create_exec_env(wasm_instance.module_inst, 4*1024);
+        const char *exception;
+        uint32 wargv[2];
+        WASMFunctionInstanceCommon *func = wasm_runtime_lookup_function(wasm_instance.module_inst, "sum");
+        WASMExecEnv *exec_env = wasm_runtime_create_exec_env(wasm_instance.module_inst, 4*1024);
 
-		wargv[0] = atoi(argv[0]);
-		wargv[1] = atoi(argv[1]);
-		wasm_runtime_call_wasm(exec_env, func, 2, wargv);
-		/* the return value is stored in argv[0] */
-		chprintf(chp, "function return: %d\n", wargv[0]);
+        wargv[0] = atoi(argv[0]);
+        wargv[1] = atoi(argv[1]);
+        wasm_runtime_call_wasm(exec_env, func, 2, wargv);
+        /* the return value is stored in argv[0] */
+        chprintf(chp, "function return: %d\n", wargv[0]);
 
-	    if ((exception = wasm_runtime_get_exception(wasm_instance.module_inst)))
-	        chprintf(chp, "%s\n", exception);
-	    return NULL;
+        if ((exception = wasm_runtime_get_exception(wasm_instance.module_inst)))
+            chprintf(chp, "%s\n", exception);
+        return NULL;
     }
 }
 
@@ -317,8 +317,8 @@ iwasm_test_sum(BaseSequentialStream *chp, int argc, char *argv[])
 void
 iwasm_main(BaseSequentialStream *chp, int argc, char *argv[])
 {
-	wasm_instance.chp = chp;
-	iwasm_init();
+    wasm_instance.chp = chp;
+    iwasm_init();
 
     app_instance_main(chp, wasm_instance.module_inst);
 }
