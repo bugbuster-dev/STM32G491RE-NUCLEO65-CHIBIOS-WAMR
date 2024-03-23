@@ -25,6 +25,7 @@
 #include "chprintf.h"
 
 #include "wasm_export.h"
+#include "wasm_runtime.h"
 #include "test_wasm.h"
 
 
@@ -157,14 +158,12 @@ static void cmd_clocks(BaseSequentialStream *chp, int argc, char *argv[]) {
 }
 
 
-void
-iwasm_main(BaseSequentialStream *chp, void *arg1);
+void iwasm_main(BaseSequentialStream *chp, int argc, char *argv[]);
+void iwasm_test_sum(BaseSequentialStream *chp, int argc, char *argv[]);
 
 static void cmd_iwasm(BaseSequentialStream *chp, int argc, char *argv[]) {
-  (void)argc;
-  (void)argv;
-
-  iwasm_main(chp, 0);
+  //iwasm_main(chp, argc, argv);
+  iwasm_test_sum(chp, argc, argv);
 
   chprintf(chp, "iwasm done\r\n");
 }
@@ -225,12 +224,21 @@ app_instance_main(BaseSequentialStream *chp, wasm_module_inst_t module_inst)
 
 static char global_heap_buf[WASM_GLOBAL_HEAP_SIZE] = { 0 };
 
-void
-iwasm_main(BaseSequentialStream *chp, void *arg1)
+
+static struct
+{
+	BaseSequentialStream   *chp;
+    wasm_module_t			module;
+	wasm_module_inst_t 		module_inst;
+
+} wasm_instance = {0};
+
+
+int
+iwasm_init(void)
 {
     uint8 *wasm_file_buf = NULL;
     uint32 wasm_file_size;
-    wasm_module_t wasm_module = NULL;
     wasm_module_inst_t wasm_module_inst = NULL;
     RuntimeInitArgs init_args;
     char error_buf[128];
@@ -239,7 +247,7 @@ iwasm_main(BaseSequentialStream *chp, void *arg1)
     int log_verbose_level = 2;
 #endif
 
-    (void)arg1;
+    if (wasm_instance.module && wasm_instance.module_inst) return;
 
     memset(&init_args, 0, sizeof(RuntimeInitArgs));
 
@@ -249,7 +257,7 @@ iwasm_main(BaseSequentialStream *chp, void *arg1)
 
     /* initialize runtime environment */
     if (!wasm_runtime_full_init(&init_args)) {
-        chprintf(chp, "Init runtime environment failed.\n");
+        chprintf(wasm_instance.chp, "Init runtime environment failed.\n");
         return;
     }
 
@@ -262,45 +270,62 @@ iwasm_main(BaseSequentialStream *chp, void *arg1)
     wasm_file_size = sizeof(wasm_test_file);
 
     /* load WASM module */
-    if (!(wasm_module = wasm_runtime_load(wasm_file_buf, wasm_file_size,
+    if (!(wasm_instance.module = wasm_runtime_load(wasm_file_buf, wasm_file_size,
                                           error_buf, sizeof(error_buf)))) {
-        chprintf(chp, "%s\n", error_buf);
-        goto fail1;
+        chprintf(wasm_instance.chp, "%s\n", error_buf);
+        return;
     }
 
     /* instantiate the module */
-    if (!(wasm_module_inst = wasm_runtime_instantiate(
-              wasm_module, 8 * 1024, 8 * 1024, error_buf, sizeof(error_buf)))) {
-        chprintf(chp, "%s\n", error_buf);
-        goto fail2;
+    if (!(wasm_instance.module_inst = wasm_runtime_instantiate(
+    		wasm_instance.module, 8 * 1024, 8 * 1024, error_buf, sizeof(error_buf)))) {
+        chprintf(wasm_instance.chp, "%s\n", error_buf);
+        wasm_runtime_unload(wasm_instance.module);
     }
+}
 
-    app_instance_main(chp, wasm_module_inst);
+void
+iwasm_test_sum(BaseSequentialStream *chp, int argc, char *argv[])
+{
+	wasm_instance.chp = chp;
+	iwasm_init();
 
-    /* destroy the module instance */
-    wasm_runtime_deinstantiate(wasm_module_inst);
+	if (argc < 2) {
+		chprintf(chp, "usage: <int> <int>\r\n");
+		return;
+	}
 
-fail2:
-    /* unload the module */
-    wasm_runtime_unload(wasm_module);
+    {
+		const char *exception;
+		uint32 wargv[2];
+		WASMFunctionInstanceCommon *func = wasm_runtime_lookup_function(wasm_instance.module_inst, "sum");
+		WASMExecEnv *exec_env = wasm_runtime_create_exec_env(wasm_instance.module_inst, 4*1024);
 
-fail1:
-    /* destroy runtime environment */
-    wasm_runtime_destroy();
+		wargv[0] = atoi(argv[0]);
+		wargv[1] = atoi(argv[1]);
+		wasm_runtime_call_wasm(exec_env, func, 2, wargv);
+		/* the return value is stored in argv[0] */
+		chprintf(chp, "function return: %d\n", wargv[0]);
+
+	    if ((exception = wasm_runtime_get_exception(wasm_instance.module_inst)))
+	        chprintf(chp, "%s\n", exception);
+	    return NULL;
+    }
+}
+
+
+void
+iwasm_main(BaseSequentialStream *chp, int argc, char *argv[])
+{
+	wasm_instance.chp = chp;
+	iwasm_init();
+
+    app_instance_main(chp, wasm_instance.module_inst);
 }
 
 #define DEFAULT_THREAD_STACKSIZE (6 * 1024)
 #define DEFAULT_THREAD_PRIORITY 50
 
-#if 0
-bool
-iwasm_init(void)
-{
-    int ret =
-        aos_task_new("wasm-main", iwasm_main, NULL, DEFAULT_THREAD_STACKSIZE);
-    return ret == 0 ? true : false;
-}
-#endif
 
 /*===========================================================================*/
 /* Generic code.                                                             */
