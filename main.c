@@ -266,20 +266,20 @@ iwasm_init(void)
 #endif
 
     /* load WASM byte buffer from byte buffer of include file */
-    wasm_file_buf = (uint8 *)wasm_test_file;
-    wasm_file_size = sizeof(wasm_test_file);
+    wasm_file_buf = (uint8 *)wasm_test_sum_aot_file;
+    wasm_file_size = sizeof(wasm_test_sum_aot_file);
 
     /* load WASM module */
     if (!(wasm_instance.module = wasm_runtime_load(wasm_file_buf, wasm_file_size,
                                           error_buf, sizeof(error_buf)))) {
-        chprintf(wasm_instance.chp, "%s\n", error_buf);
+        chprintf(wasm_instance.chp, "wasm_runtime_load: %s\r\n", error_buf);
         return;
     }
 
     /* instantiate the module */
     if (!(wasm_instance.module_inst = wasm_runtime_instantiate(
             wasm_instance.module, 8 * 1024, 8 * 1024, error_buf, sizeof(error_buf)))) {
-        chprintf(wasm_instance.chp, "%s\n", error_buf);
+        chprintf(wasm_instance.chp, "wasm_runtime_instantiate: %s\r\n", error_buf);
         wasm_runtime_unload(wasm_instance.module);
     }
 }
