@@ -1,0 +1,18 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {
+  },
+
+  "customizations": {
+    "codespaces": {
+      "repositories": {
+        "bugbuster-dev/ChibiOS": {
+          "permissions": "write-all"
+        },
+        "bugbuster-dev/wasm-micro-runtime": {
+          "permissions": "write-all"
+        }
+      }
+    }
+  }
+}
